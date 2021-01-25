@@ -15,6 +15,7 @@ echo "  D for Debug"
 echo "  R for Release (default!)"
 echo "  I for RelWithDebInfo"
 echo "  M for MinSizeRel"
+echo "  U for UMap Memory Mapping Service"
 echo "For just cleaning the parameter is 'clean'"
 echo " "
 echo "The 2nd optional parameter selects the compiler family:"
@@ -24,10 +25,11 @@ echo "  clang for using clang compilers"
 echo "  ibmpwr9 for compiling in Power 9 with IBM compilers"
 echo "  ibmpwr8 for compiling in Power 8 with IBM compilers"
 echo "Default compiler : $defaultcomp" 
+echo "The 3rd optional parameter is path to UMap installation if 1st option is U"
 exit 1
 }
 
-if [ "$#" -eq 2 ] && ([ $2 = "gnu" ] || [ $2 = "intel" ] || [ $2 = "clang" ] || [ $2 = "ibmpwr9" ] || [ $2 = "ibmpwr8" ]); then
+if ( [ "$#" -eq 2 ] || [ "$#" -eq 3 ]) && ([ $2 = "gnu" ] || [ $2 = "intel" ] || [ $2 = "clang" ] || [ $2 = "ibmpwr9" ] || [ $2 = "ibmpwr8" ]); then
     echo "Preparing environment for $2 compilers..."
     comp="-D COMPILER_FAMILY=$2"
 elif [ "$#" -eq 2 ]; then
@@ -74,6 +76,9 @@ if [ -n "$1" ]; then
     elif [ $1 = "D" ]; then
         echo "  CMake profile will be Debug"
         $cmakebin $comp -D CMAKE_BUILD_TYPE=Debug .
+    elif [ $1 = "U" ]; then
+        echo "  CMake profile will be Release with UMap at "$3
+        $cmakebin $comp -D CMAKE_BUILD_TYPE=Release -DUSE_UMAP=1 .
     else
 	echo "ERROR! Unsupported build type"
         print_usage

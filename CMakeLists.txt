@@ -218,20 +218,69 @@ ELSE(OPENMP_FOUND)
   MESSAGE(FATAL_ERROR "OpenMP not found!")
 ENDIF(OPENMP_FOUND)
 
-# Install and check PERM (over JeMalloc)
+
 include(ExternalProject)
-ExternalProject_Add(PERM
-  PREFIX ${CMAKE_BINARY_DIR}/third-party
-  GIT_REPOSITORY https://github.com/khyox/perm-je
-  #URL https://computation.llnl.gov/projects/memory-centric-architectures/download/perm-je-0.9.7.tgz
-  DOWNLOAD_NO_PROGRESS 1  
-  CONFIGURE_COMMAND <SOURCE_DIR>/configure --with-jemalloc-prefix=je CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} --prefix=<INSTALL_DIR>
-  BUILD_COMMAND make -j 16
-  BUILD_IN_SOURCE 1
-  LOG_BUILD 0
-  INSTALL_COMMAND make install
-  LOG_INSTALL 0
-)
+
+# Install and check PERM (over JeMalloc)
+# Use UMap if USE_UMAP is spcified
+if (USE_UMAP)
+
+   # build umap from the develop branch
+
+   ExternalProject_Add(UMAP
+	PREFIX ${CMAKE_BINARY_DIR}/third-party
+      	GIT_REPOSITORY https://github.com/LLNL/umap.git
+	GIT_TAG origin/develop
+	GIT_SHALLOW 1
+      	DOWNLOAD_NO_PROGRESS 1  
+      	CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR> -DCMAKE_BUILD_TYPE=Release
+      	BUILD_COMMAND make -j 16
+      	BUILD_IN_SOURCE 1
+      	LOG_BUILD 0
+      	INSTALL_COMMAND make install
+      	LOG_INSTALL 0
+   )
+
+   # define perm based on umap
+   
+   ExternalProject_Add(PERM
+	PREFIX ${CMAKE_BINARY_DIR}/third-party
+  	#DOWNLOAD_COMMAND ""
+  	#SOURCE_DIR /g/g90/peng8/flash/perm-je
+  	GIT_REPOSITORY https://github.com/khyox/perm-je
+  	DOWNLOAD_NO_PROGRESS 1
+  	PATCH_COMMAND patch -p1 < ${CMAKE_BINARY_DIR}/umap-patch.patch
+  	CONFIGURE_COMMAND env LD_LIBRARY_PATH=<INSTALL_DIR>/lib:$LD_LIBRARY_PATH <SOURCE_DIR>/configure --with-jemalloc-prefix=je CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} CPPFLAGS=-I<INSTALL_DIR>/include/umap${CMAKE_CXX_FLAGS} LIBS=<INSTALL_DIR>/lib/libumap.so --prefix=<INSTALL_DIR>
+  	BUILD_COMMAND make -j 16
+  	BUILD_IN_SOURCE 1
+  	LOG_BUILD 0
+  	INSTALL_COMMAND make install
+  	LOG_INSTALL 0
+	DEPENDS UMAP
+   )
+else(USE_UMAP)
+
+   # Install a standard PERM
+   
+   ExternalProject_Add(PERM
+	PREFIX ${CMAKE_BINARY_DIR}/third-party
+   	GIT_REPOSITORY https://github.com/khyox/perm-je
+   	#URL https://computation.llnl.gov/projects/memory-centric-architectures/download/perm-je-0.9.7.tgz
+   	DOWNLOAD_NO_PROGRESS 1  
+   	CONFIGURE_COMMAND <SOURCE_DIR>/configure --with-jemalloc-prefix=je CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} --prefix=<INSTALL_DIR>
+   	BUILD_COMMAND make -j 16
+   	BUILD_IN_SOURCE 1
+   	LOG_BUILD 0
+   	INSTALL_COMMAND make install
+   	LOG_INSTALL 0
+   )
+endif(USE_UMAP)
+
+if(USE_UMAP)
+   ExternalProject_Get_Property(UMAP install_dir)
+   link_libraries(${install_dir}/lib/libumap.so)
+endif(USE_UMAP)
+
 add_library(jemalloc STATIC IMPORTED)
 add_dependencies(jemalloc PERM)
 set(PERM_LIB ${CMAKE_BINARY_DIR}/third-party/lib/libjemalloc.a)

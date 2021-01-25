@@ -240,7 +240,7 @@ if [ ! -e $fastsum_file ] || [ $overwrite == 1 ] ; then
    fi
    echo "Process $query_file outputfile=$fastsum_file $ostr"
 
-   /usr/bin/time -v $rprog $fstr $pstr -u $taxfile -w $rankval -x $use_min_score -j $min_read_kmer -l $hbias -b $sdiff $vstr $nullmstr -e $depthf -p -t $threads -i $query_file -d $db -c $taxtree -o $rlofile $fastqstr >& $logfile
+   /usr/bin/time -v $rprog $fstr $pstr -u $taxfile -w $rankval -x $use_min_score -j $min_read_kmer -l $hbias -b $sdiff $vstr $nullmstr -e $depthf -p -t $threads -i $query_file -d $db -c $taxtree -o $rlofile $fastqstr #>& $logfile
    min_reads=1
    if [ ! -e $fastsum_file ] ; then
       echo "Error, did not create a fastsummary file [$fastsum_file]"
